@@ -1,15 +1,22 @@
 {
-  "name": "my-react-app",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "start": "vite",
-    "build": "tsc -b && vite build",
-    "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview"
-  },
+    "name": "kosodateshienseido",
+    "version": "1.0.0",
+    "main": "index.js",
+    "homepage": "https://github.com/Machiko-Hashiguchi/kosodateshienseido.git",
+    "scripts": {
+    "format": "prettier --write \"src/**/*.js\"",
+    "eslint-fix": "eslint --fix \"src/**/*.js\"",
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d build"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "description": "",
   "dependencies": {
     "@heroicons/react": "^2.2.0",
     "@material-tailwind/react": "^2.1.10",
