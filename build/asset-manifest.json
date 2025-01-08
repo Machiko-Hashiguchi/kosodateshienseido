@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/Machiko-Hashiguchi/kosodateshienseido.git/static/css/main.5b031e3a.css",
+    "main.js": "/Machiko-Hashiguchi/kosodateshienseido.git/static/js/main.64fc4ffd.js",
+    "index.html": "/Machiko-Hashiguchi/kosodateshienseido.git/index.html",
+    "main.5b031e3a.css.map": "/Machiko-Hashiguchi/kosodateshienseido.git/static/css/main.5b031e3a.css.map",
+    "main.64fc4ffd.js.map": "/Machiko-Hashiguchi/kosodateshienseido.git/static/js/main.64fc4ffd.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.5b031e3a.css",
+    "static/js/main.64fc4ffd.js"
+  ]
+}
