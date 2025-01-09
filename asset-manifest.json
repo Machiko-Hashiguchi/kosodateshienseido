@@ -1,13 +1,13 @@
 {
   "files": {
     "main.css": "/kosodateshienseido/static/css/main.5b031e3a.css",
-    "main.js": "/kosodateshienseido/static/js/main.1607adab.js",
+    "main.js": "/kosodateshienseido/static/js/main.d236f4f9.js",
     "index.html": "/kosodateshienseido/index.html",
     "main.5b031e3a.css.map": "/kosodateshienseido/static/css/main.5b031e3a.css.map",
-    "main.1607adab.js.map": "/kosodateshienseido/static/js/main.1607adab.js.map"
+    "main.d236f4f9.js.map": "/kosodateshienseido/static/js/main.d236f4f9.js.map"
   },
   "entrypoints": [
     "static/css/main.5b031e3a.css",
-    "static/js/main.1607adab.js"
+    "static/js/main.d236f4f9.js"
   ]
 }
