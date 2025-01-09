@@ -2,7 +2,7 @@
   "name": "kosodateshienseido",
   "version": "1.0.0",
   "main": "index.js",
-  "homepage": "https://mytea128.github.io/kosodateshienseido/",
+  "homepage": "https://mytea128.github.io/",
   "scripts": {
     "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx}\"",
     "eslint-fix": "eslint --fix \"src/**/*.js\"",
