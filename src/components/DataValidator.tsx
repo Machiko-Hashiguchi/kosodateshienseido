@@ -16,6 +16,7 @@ import type { FileState, FileType } from '../types/files';
 import type { ValidationResult, ValidationError } from '../types/validation';
 import * as XLSX from 'xlsx';
 import Papa from 'papaparse';
+import { readShiftJISFile, parseCSV } from '../utils/fileUtils';
 
 const baseProps = {
   placeholder: "",
@@ -67,7 +68,7 @@ export function DataValidator() {
       });
     });
   };
-
+  
   const validateFiles = async (excel: File, json: File, schema: File): Promise<ValidationResult> => {
     try {
       const [excelData, jsonData, schemaData] = await Promise.all([
@@ -142,6 +143,20 @@ export function DataValidator() {
         json: !files.json ? 'ファイルを選択してください' : undefined,
         schema: !files.schema ? 'ファイルを選択してください' : undefined,
       });
+      try {
+        // スキーマファイルの読み込みと変換
+        const schemaContent = await readShiftJISFile(files.schema as File);
+        const schemaData = await parseCSV(schemaContent);
+        
+        // ここでバリデーション処理
+        console.log('Parsed schema data:', schemaData);
+        
+      } catch (error: any) {
+        console.error('Error:', error);
+        alert(error instanceof Error ? error.message : 'エラーが発生しました');
+      } finally {
+        setLoading(false);
+      }
       return;
     }
 
@@ -203,7 +218,7 @@ export function DataValidator() {
                 チェック中...
               </div>
             ) : (
-              'バリデーション実行'
+              '実行'
             )}
           </Button>
         </CardFooter>
