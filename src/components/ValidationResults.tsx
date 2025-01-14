@@ -4,8 +4,13 @@ import {
   CardBody,
   Alert,
   Typography,
+  Button,
+  Tooltip
 } from "@material-tailwind/react";
+import { Download } from "lucide-react";
 import type { ValidationResult, ValidationError } from '../types/validation';
+import { generateValidationCsv } from '../utils/fileUtils';
+import { useMemo } from 'react';
 
 interface ErrorListProps {
   title: string;
@@ -23,7 +28,7 @@ function ErrorList({ title, errors, type = "error" }: ErrorListProps) {
       case "success":
         return "green";
       default:
-        return "red";
+        return "green";
     }
   };
 
@@ -33,29 +38,48 @@ function ErrorList({ title, errors, type = "error" }: ErrorListProps) {
     onPointerLeaveCapture: () => {},
   };
 
-
   return (
-    <div>
+    <div className="mt-4">
       <Typography 
         {...defaultTypographyProps}
         variant="h5"
         color={getAlertColor(type)}
+        className="mb-2"
       >
         {title} ({errors.length}件)
       </Typography>
-      <div>
+      <div className="space-y-2">
         {errors.map((error, index) => (
           <Alert 
-            key={index} 
+            key={`${error.row}-${error.column}-${index}`}
             color={getAlertColor(type)}
             variant="filled"
+            className="flex items-center"
           >
-            <Typography
-              {...defaultTypographyProps}
-              color="inherit"
-            >
-              行{error.row}, 列{error.column}: {error.message}
-            </Typography>
+            <div className="flex-1">
+              <Typography
+                {...defaultTypographyProps}
+                color="inherit"
+                className="font-medium"
+              >
+                行 {error.row}
+              </Typography>
+              <Typography
+                {...defaultTypographyProps}
+                variant="small"
+                color="inherit"
+                className="mt-1 opacity-80"
+              >
+                項目: {error.column}
+              </Typography>
+              <Typography
+                {...defaultTypographyProps}
+                color="inherit"
+                className="mt-1"
+              >
+                {error.message}
+              </Typography>
+            </div>
           </Alert>
         ))}
       </div>
@@ -74,56 +98,97 @@ export function ValidationResults({ result }: ValidationResultsProps) {
     onPointerLeaveCapture: () => {},
   };
 
+  const totalErrors = useMemo(() => {
+    return result.schemaErrors.length + 
+           result.dateErrors.length;
+  }, [result]);
+
+  const handleDownload = () => {
+    const allErrors = [
+      ...result.schemaErrors,
+      ...result.dateErrors
+    ];
+    
+    if (allErrors.length === 0) {
+      alert('エラーがないため、出力するデータがありません。');
+      return;
+    }
+
+    const csv = generateValidationCsv(allErrors, result.excelData);
+    const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csv], { 
+      type: 'text/csv;charset=utf-8' 
+    });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `validation_results_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  };
+
   return (
-    <Card
-      {...defaultProps}
-      shadow={false}
-    >
+    <Card {...defaultProps} shadow={false} className="mb-8">
       <CardHeader 
         {...defaultProps}
         floated={false}
         variant="gradient"
         color={result.isValid ? "green" : "red"}
         shadow={false}
+        className="p-6"
       >
-        <Typography 
-          {...defaultProps}
-          variant="h4"
-          color="white"
-        >
-          バリデーション結果: {result.isValid ? '成功' : 'エラーあり'}
-        </Typography>
+        <div className="flex items-center justify-between">
+          <Typography 
+            {...defaultProps}
+            variant="h6"
+            color="white"
+            className="flex items-center gap-2"
+          >
+            バリデーション結果
+            <span className="px-2 py-1 text-sm bg-white/20 rounded">
+              {result.isValid ? '成功' : `${totalErrors}件のエラー`}
+            </span>
+          </Typography>
+          {totalErrors > 0 && (
+            <Tooltip content="エラー内容をCSVでダウンロード">
+              <Button
+                {...defaultProps}
+                variant="filled"
+                size="sm"
+                className="flex items-center gap-2 bg-white/20 hover:bg-white/30"
+                onClick={handleDownload}
+              >
+                <Download className="h-4 w-4" />
+                CSV出力
+              </Button>
+            </Tooltip>
+          )}
+        </div>
       </CardHeader>
 
-      <CardBody {...defaultProps}>
+      <CardBody {...defaultProps} className="p-6">
         <Alert
           color={result.recordCountMatch ? "green" : "red"}
           variant="filled"
+          className="mb-4"
         >
           <Typography
             {...defaultProps}
             color="inherit"
+            className="flex items-center gap-2"
           >
-            レコード数: Excel({result.excelRecordCount}) / JSON({result.jsonRecordCount})
+            <span className="font-medium">レコード数検証:</span>
+            <span>
+              Excel ({result.excelRecordCount}) / JSON ({result.jsonRecordCount})
+            </span>
             {!result.recordCountMatch && (
-              <Typography 
-                {...defaultProps}
-                variant="small"
-                color="red"
-              >
-                <span> - 不一致</span>
-              </Typography>
+              <span className="bg-white/20 px-2 py-0.5 rounded text-sm">
+                不一致
+              </span>
             )}
           </Typography>
         </Alert>
-
-        {result.formattingErrors.length > 0 && (
-          <ErrorList
-            title="Excel形式エラー"
-            errors={result.formattingErrors}
-            type="error"
-          />
-        )}
 
         {result.schemaErrors.length > 0 && (
           <ErrorList
@@ -145,12 +210,14 @@ export function ValidationResults({ result }: ValidationResultsProps) {
           <Alert
             color="green"
             variant="filled"
+            className="mt-4"
           >
             <Typography
               {...defaultProps}
               color="inherit"
+              className="font-medium"
             >
-              すべてのチェックに合格しました。
+              すべてのチェックに合格しました
             </Typography>
           </Alert>
         )}

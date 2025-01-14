@@ -2,7 +2,7 @@ export interface ValidationError {
   row: number;
   column: string;
   message: string;
-  value?: unknown;
+  value?: any;
   type: string;
 }
 
@@ -11,21 +11,18 @@ export interface ValidationResult {
   recordCountMatch: boolean;
   excelRecordCount: number;
   jsonRecordCount: number;
-  formattingErrors: ValidationError[];
   schemaErrors: ValidationError[];
   dateErrors: ValidationError[];
   totalErrors: number;
+  excelData: any[];
 }
 
 export interface DataSchema {
   field_path: string;
-  json_path_1: string;
-  json_path_2: string;
-  json_path_3: string;
-  data_type: string;
-  required: boolean;
-  description: string;
-  format: string;
-  allowed_values: string;
-  validation_rules: string;
+  data_type: 'string' | 'number' | 'boolean' | 'date' | 'array[string]';
+  required: string;  // 'true' または 'false' の文字列として扱う
+  allowed_values?: string;
+  description?: string;
+  format?: string;  // 追加: date型などのフォーマット指定
+  validation_rules?: string;
 }
