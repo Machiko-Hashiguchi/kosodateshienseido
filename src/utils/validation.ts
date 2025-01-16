@@ -140,30 +140,30 @@ class Validator {
         const boolStr = String(normalizedValue).toLowerCase();
         return validBooleans.includes(boolStr) ? null : 'TまたはFで入力してください';
       
-        case 'array[string]':
-          // 文字列でない場合はエラー
-          if (typeof normalizedValue !== 'string') {
-            return '配列形式ではありません';
-          }
+      case 'array[string]':
+        // 文字列でない場合はエラー
+         if (typeof normalizedValue !== 'string') {
+           return '配列形式ではありません';
+         }
         
-          // 正規表現による検証
-          if (field.validation_rule) {
-            try {
-              const regex = new RegExp(field.validation_rule);
-              
-              // 入力値を配列に変換（カンマ区切りの場合は分割、そうでない場合は単一要素の配列に）
-              const values = normalizedValue.includes(',') 
-                ? normalizedValue.split(',')
-                : [normalizedValue];
-              
-              // 各値をトリムして空値を除去
-              const trimmedValues = values
-                .map(v => v.trim())
-                .filter(v => v !== '' && v.toLowerCase() !== 'null');
+         // 正規表現による検証
+         if (field.validation_rule) {
+           try {
+             const regex = new RegExp(field.validation_rule);
+             
+             // 入力値を配列に変換（カンマ区切りの場合は分割、そうでない場合は単一要素の配列に）
+             const values = normalizedValue.includes(',') 
+               ? normalizedValue.split(',')
+               : [normalizedValue];
+             
+             // 各値をトリムして空値を除去
+             const trimmedValues = values
+               .map(v => v.trim())
+               .filter(v => v !== '' && v.toLowerCase() !== 'null');
         
-              // すべての値に対して正規表現チェック
-              const invalidValues = trimmedValues.filter(v => !regex.test(v));
-              
+             // すべての値に対して正規表現チェック
+             const invalidValues = trimmedValues.filter(v => !regex.test(v));
+            
               if (invalidValues.length > 0) {
                 return `次の値が正しくありません: ${invalidValues.join(', ')}`;
               }
@@ -252,12 +252,37 @@ class Validator {
     const stringValue = String(value).trim();
 
     if (field.data_type === 'array[string]') {
-      const values = Array.isArray(value) 
-        ? value.filter(v => !this.isEmpty(v))
-        : stringValue.split(',').map(v => v.trim()).filter(v => v !== '');
-      const invalidValues = values.filter(v => !allowedValues.includes(v));
-      return invalidValues.length === 0 ? null : 
-        `許容値の範囲外の値があります (許容値: ${allowedValues.join(', ')})`;
+      // 文字列でない場合はエラー
+      if (typeof value !== 'string') {
+        return '配列形式ではありません';
+      }
+    
+      // 正規表現による検証
+      if (field.validation_rule) {
+        try {
+          const regex = new RegExp(field.validation_rule);
+          
+          // 入力値を配列に変換（カンマ区切りの場合は分割、そうでない場合は単一要素の配列に）
+          const values = value.includes(',') 
+            ? value.split(',')
+            : [value];
+          
+          // 各値をトリムして空値を除去
+          const trimmedValues = values
+            .map(v => v.trim())
+            .filter(v => v !== '' && v.toLowerCase() !== 'null');
+          
+          // すべての値に対して正規表現チェック
+          const invalidValues = trimmedValues.filter(v => !regex.test(v));
+          
+          if (invalidValues.length > 0) {
+            return `次の値が正しくありません: ${invalidValues.join(', ')}`;
+          }
+        } catch {
+          return 'バリデーションルールの形式が不正です';
+        }
+      }    
+      return null;
     }
 
     return allowedValues.includes(stringValue) ? null :
