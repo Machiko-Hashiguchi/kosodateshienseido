@@ -59,7 +59,7 @@ export const generateValidationCsv = (errors: ValidationError[], excelData: any[
       psid: rowData.psid || '',
       自治体名: rowData['対象地域.対象地域'] || '',
       通称: rowData['名称.通称'] || '',
-      エラー項目名: error.column,
+      エラー項目名: error.field,
       エラー内容: error.message
     };
   });

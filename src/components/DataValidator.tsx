@@ -7,15 +7,12 @@ import {
   Typography,
   Button,
   Spinner,
-  Alert,
 } from "@material-tailwind/react";
 import { FileUpload } from './FileUpload';
 import { ValidationResults } from './ValidationResults';
 import type { FileState, FileType } from '../types/files';
-import type { ValidationResult, ValidationError } from '../types/validation';
-import * as XLSX from 'xlsx';
-import Papa from 'papaparse';
-import { readShiftJISFile, parseCSV } from '../utils/fileUtils';
+import type { ValidationResult } from '../types/validation';
+import { validateFiles } from '../utils/validation';
 
 const baseProps = {
   placeholder: "",
@@ -40,127 +37,6 @@ export function DataValidator() {
     }
   }, []);
 
-  const readExcelFile = async (file: File): Promise<any[]> => {
-    const arrayBuffer = await file.arrayBuffer();
-    const workbook = XLSX.read(arrayBuffer, {
-      type: 'array',
-      cellDates: true,
-      cellNF: true,
-    });
-    const firstSheet = workbook.SheetNames[0];
-    return XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet]);
-    
-  };
-
-  const readJsonFile = async (file: File): Promise<any[]> => {
-    const text = await file.text();
-    return JSON.parse(text);
-  };
-
-  const readSchemaFile = async (file: File): Promise<any[]> => {
-    const text = await file.text();
-    return new Promise((resolve, reject) => {
-      Papa.parse(text, {
-        header: true,
-        skipEmptyLines: true,
-        complete: (results) => resolve(results.data),
-        error: (error: Error) => reject(error)
-      });
-    });
-  };
-  
-  const validateFiles = async (excel: File, json: File, schema: File): Promise<ValidationResult> => {
-    try {
-      const [excelData, jsonData, schemaData] = await Promise.all([
-        readExcelFile(excel),
-        readJsonFile(json),
-        readSchemaFile(schema),
-      ]);
-
-      // デバッグ出力
-      console.log('Schema Data Structure:', {
-        rowCount: schemaData.length,
-        sampleFieldPaths: schemaData.slice(0, 3).map(row => row.field_path)
-      });
-
-      const formattingErrors: ValidationError[] = [];
-      const schemaErrors: ValidationError[] = [];
-      const dateErrors: ValidationError[] = [];
-
-      const recordCountMatch = excelData.length === jsonData.length;
-      // スキーマのfield_pathを使用
-      const schemaFields = schemaData.map(row => row.field_path);
-      
-      // デバッグ出力
-      console.log('Field Comparison:', {
-        excelFields: Object.keys(excelData[0] || {}),
-        schemaFields: schemaFields,
-        matching: Object.keys(excelData[0] || {}).filter(field => schemaFields.includes(field))
-      });
-      
-      excelData.forEach((row, rowIndex) => {
-        Object.entries(row).forEach(([key, value]) => {
-          if (!schemaFields.includes(key)) {
-            schemaErrors.push({
-              row: rowIndex + 1,
-              column: key,
-              message: '未定義のフィールドです',
-              value,
-              type: typeof value
-            });
-          }
-
-          const schemaField = schemaData.find(s => s.field_path === key);
-          if (schemaField?.data_type === 'date' && value && !(value instanceof Date)) {
-            dateErrors.push({
-              row: rowIndex + 1,
-              column: key,
-              message: '日付形式が不正です',
-              value,
-              type: 'date'
-            });
-          }
-
-          if (schemaField?.required === 'true' && !value) {
-            formattingErrors.push({
-              row: rowIndex + 1,
-              column: key,
-              message: '必須項目が未入力です',
-              value,
-              type: schemaField.data_type
-            });
-          }
-        });
-      });
-
-      const totalErrors = formattingErrors.length + schemaErrors.length + dateErrors.length;
-
-      // バリデーション結果のデバッグ出力
-      console.log('Validation Summary:', {
-        totalErrors,
-        errorCounts: {
-          formatting: formattingErrors.length,
-          schema: schemaErrors.length,
-          date: dateErrors.length
-        }
-      });
-
-      return {
-        isValid: totalErrors === 0 && recordCountMatch,
-        recordCountMatch,
-        excelRecordCount: excelData.length,
-        jsonRecordCount: jsonData.length,
-        schemaErrors,
-        dateErrors,
-        totalErrors,
-        excelData
-      };
-    } catch (error) {
-      console.error('Validation error:', error);
-      throw new Error('バリデーション処理中にエラーが発生しました');
-    }
-  };
-
   const handleValidate = async () => {
     if (!files.excel || !files.json || !files.schema) {
       setErrors({
@@ -168,35 +44,6 @@ export function DataValidator() {
         json: !files.json ? 'ファイルを選択してください' : undefined,
         schema: !files.schema ? 'ファイルを選択してください' : undefined,
       });
-      try {
-        console.log('Starting schema file processing');
-        // スキーマファイルの読み込みと変換
-        const schemaContent = await readShiftJISFile(files.schema as File);
-        console.log('Schema content loaded:', schemaContent.slice(0, 200) + '...');
-        
-        const schemaData = await parseCSV(schemaContent);
-        console.log('CSV parsing complete:', {
-          rowCount: schemaData.length,
-          fields: Object.keys(schemaData[0] || {}),
-          firstRow: schemaData[0]
-        });
-        
-        // ここでバリデーション処理
-        console.log('Validation progress:', {
-          schemaDataLength: schemaData.length,
-          schemaFields: Object.keys(schemaData[0] || {})
-        });
-        
-      } catch (error: any) {
-        console.error('Error details:', {
-          message: error.message,
-          stack: error.stack,
-          type: error.constructor.name
-        });
-        alert(error instanceof Error ? error.message : 'エラーが発生しました');
-      } finally {
-        setLoading(false);
-      }
       return;
     }
 
@@ -211,6 +58,7 @@ export function DataValidator() {
       setLoading(false);
     }
   };
+
 
   return (
     <div className="container mx-auto p-4">
@@ -260,15 +108,8 @@ export function DataValidator() {
         </CardFooter>
       </Card>
 
-      {validationResult && (
-        <Alert {...baseProps} color={validationResult.isValid ? "green" : "red"}>
-          バリデーション結果: {validationResult.isValid ? '成功' : 'エラーあり'}
-        </Alert>
-      )}
-
       {validationResult && <ValidationResults result={validationResult} />}
     </div>
   );
 }
 
-export default DataValidator;
